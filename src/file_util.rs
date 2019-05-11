@@ -2,7 +2,7 @@ pub fn load_lines(path: &str) -> Result<Vec<String>, String> {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
 
-    let file = File::open(&path).expect(&format!("Failed to open file: {}", path));
+    let file = File::open(&path).map_err(|e| e.to_string())?;
 
     let buffered_lines = BufReader::new(file).lines();
 

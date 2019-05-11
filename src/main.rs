@@ -122,16 +122,16 @@ fn main() {
 }
 
 fn process(args: &AppArguments) {
-    use crate::fasta::{load_fasta, Fasta};
+    use crate::fasta::load_fasta;
     use bio::io::fasta;
     use std::fs::File;
     use std::io::BufWriter;
-    use std::io::Write;
 
     let fasta_data = load_fasta(&args.sequence_input_path).expect("Failed to get fasta data.");
 
     let output = File::create(&args.output_path)
-        .expect(&format!("Failed to create file at: {}", &args.output_path));
+        .unwrap_or_else(|_| panic!("Failed to create file at: {}", &args.output_path));
+
     let writer = BufWriter::new(output);
     let mut fasta_writer = fasta::Writer::new(writer);
 
@@ -144,19 +144,19 @@ fn process(args: &AppArguments) {
     for zone in blast_hits.get_hit_zones() {
         for hit in zone.get_hits() {
             if hit.get_evalue() <= args.emax {
-                wanted_hits.push(hit);
+                wanted_hits.push((hit, zone.get_query()));
             }
         }
     }
 
-    for hit in wanted_hits {
+    for (hit, query) in wanted_hits {
         if let Some(sequence_data) = fasta_data.extract_sequence(
             hit.get_record_ref(),
             hit.get_subject_bounds(),
             args.extension,
         ) {
             let text_slice = bio::utils::TextSlice::from(&sequence_data);
-            let mut record = fasta::Record::with_attrs(hit.get_record_ref(), None, text_slice);
+            let record = fasta::Record::with_attrs(hit.get_record_ref(), Some(query), text_slice);
             fasta_writer
                 .write_record(&record)
                 .expect("Failed to write fasta record.");

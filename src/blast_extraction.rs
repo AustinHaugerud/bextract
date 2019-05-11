@@ -117,7 +117,7 @@ fn process_zone(lines: Lines, zone: (usize, usize)) -> HitsZone {
 fn find_hit_starts(lines: &Lines, (beg, end): (usize, usize)) -> Vec<usize> {
     let mut hit_starts = vec![];
 
-    for i in beg..end + 1 {
+    for i in beg..=end {
         if lines.get(i).unwrap().contains("> NODE") {
             hit_starts.push(i);
         }
@@ -157,25 +157,29 @@ fn parse_hit_record_ref(lines: &Lines, (beg, _): (usize, usize)) -> String {
 
 fn parse_hit_evalue(lines: &Lines, (beg, end): (usize, usize)) -> f64 {
     let expr = retrieve_eval_expression(&lines, (beg, end));
-    let parts = expr.split("=").collect::<Vec<&str>>();
-    parts[1].trim().parse::<f64>().expect(&format!(
-        "Failed to parse evalue in partition: {:?}",
-        (beg, end)
-    ))
+    let parts = expr.split('=').collect::<Vec<&str>>();
+    parts[1].trim().parse::<f64>().unwrap_or_else(|_| {
+        panic!("Failed to parse evalue in partition: {:?}", (beg, end));
+    })
 }
 
 fn parse_hit_subject_bounds(lines: &Lines, (beg, end): (usize, usize)) -> (usize, usize) {
     let subject_line = retrieve_subject(&lines, (beg, end));
     let parts = subject_line.split_ascii_whitespace().collect::<Vec<&str>>();
 
-    let lval = parts[1].parse::<usize>().expect(&format!(
-        "Failed to get subject left bound in partition: {:?}",
-        (beg, end)
-    ));
-    let rval = parts[3].parse::<usize>().expect(&format!(
-        "Failed to get subject right bound in partition: {:?}",
-        (beg, end)
-    ));
+    let lval = parts[1].parse::<usize>().unwrap_or_else(|_| {
+        panic!(
+            "Failed to get subject left bound in partition: {:?}",
+            (beg, end)
+        );
+    });
+
+    let rval = parts[3].parse::<usize>().unwrap_or_else(|_| {
+        panic!(
+            "Failed to get subject right bound in partition: {:?}",
+            (beg, end)
+        );
+    });
 
     (lval, rval)
 }
@@ -183,25 +187,27 @@ fn parse_hit_subject_bounds(lines: &Lines, (beg, end): (usize, usize)) -> (usize
 fn retrieve_eval_expression(lines: &Lines, (beg, end): (usize, usize)) -> String {
     let mut result = None;
 
-    for i in beg..end + 1 {
+    for i in beg..=end {
         let line = lines.get(i).unwrap();
         if line.contains("Expect") {
-            let parts = line.split(",").collect::<Vec<&str>>();
+            let parts = line.split(',').collect::<Vec<&str>>();
             result = Some(parts[1].to_string());
             break;
         }
     }
 
-    result.expect(&format!(
-        "Failed to retrieve eval expression in partition: {:?}",
-        (beg, end)
-    ))
+    result.unwrap_or_else(|| {
+        panic!(
+            "Failed to retrieve eval expression in partition: {:?}",
+            (beg, end)
+        );
+    })
 }
 
 fn retrieve_subject(lines: &Lines, (beg, end): (usize, usize)) -> String {
     let mut result = None;
 
-    for i in beg..end + 1 {
+    for i in beg..=end {
         let line = lines.get(i).unwrap();
         if line.contains("Sbjct") {
             result = Some(line.to_string());
@@ -209,8 +215,7 @@ fn retrieve_subject(lines: &Lines, (beg, end): (usize, usize)) -> String {
         }
     }
 
-    result.expect(&format!(
-        "Failed to retrieve subject in partition: {:?}",
-        (beg, end)
-    ))
+    result.unwrap_or_else(|| {
+        panic!("Failed to retrieve subject in partition: {:?}", (beg, end));
+    })
 }
