@@ -1,0 +1,10 @@
+[package]
+name = "bextract"
+version = "0.1.0"
+authors = ["AustinHaugerud <austin15328@hotmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = "*"
+bio = "*"
+rayon = "*"
